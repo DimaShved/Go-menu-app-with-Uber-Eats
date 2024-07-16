@@ -7,6 +7,9 @@ import (
 	"uber-go-menu-copy/internal/config"
 	"uber-go-menu-copy/internal/pkg/db"
 	"uber-go-menu-copy/internal/pkg/validator"
+	"uber-go-menu-copy/internal/repository"
+	"uber-go-menu-copy/internal/routes/rest"
+	"uber-go-menu-copy/internal/service"
 )
 
 func main() {
@@ -15,9 +18,14 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	_ = validator.Validate()
+	vld := validator.Validate()
+
+	restaurantRepo := repository.NewRestaurantRepo(db.DB)
+	restaurantService := service.NewRestaurantService(restaurantRepo)
 
 	app := fiber.New()
+
+	rest.SetupRestaurantRoutes(app, restaurantService, vld)
 
 	err = app.Listen(":" + cfg.App.PORT)
 	if err != nil {

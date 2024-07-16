@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 	"uber-go-menu-copy/internal/config"
+	"uber-go-menu-copy/internal/domain"
 )
 
 var DB *gorm.DB
@@ -28,7 +29,9 @@ func Connect(cfg *config.DatabaseConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err = database.WithContext(ctx).AutoMigrate()
+	err = database.WithContext(ctx).AutoMigrate(
+		&domain.Restaurant{},
+	)
 
 	if err != nil {
 		slog.Error("Failed to migrate database", "error", err)

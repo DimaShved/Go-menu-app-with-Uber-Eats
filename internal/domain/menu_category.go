@@ -15,6 +15,7 @@ type MenuCategory struct {
 	UpdatedAt   time.Time    `gorm:"autoUpdateTime" json:"updated_at,omitempty"`
 	DeletedAt   *time.Time   `gorm:"index" json:"deleted_at,omitempty"`
 	Section     MenuSections `gorm:"foreignKey:SectionID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"section" validate:"-"`
+	Items       []MenuItem   `gorm:"many2many:item_categories;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"items" validate:"-"`
 }
 
 func (mc *MenuCategory) PreloadRelations() []string {

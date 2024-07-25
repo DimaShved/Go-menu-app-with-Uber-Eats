@@ -33,6 +33,7 @@ func Connect(cfg *config.DatabaseConfig) error {
 		&domain.Restaurant{},
 		&domain.MenuSections{},
 		&domain.MenuCategory{},
+		&domain.MenuItem{},
 	)
 
 	if err != nil {

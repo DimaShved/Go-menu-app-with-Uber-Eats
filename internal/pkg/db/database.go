@@ -31,6 +31,7 @@ func Connect(cfg *config.DatabaseConfig) error {
 
 	err = database.WithContext(ctx).AutoMigrate(
 		&domain.Restaurant{},
+		&domain.MenuSections{},
 	)
 
 	if err != nil {

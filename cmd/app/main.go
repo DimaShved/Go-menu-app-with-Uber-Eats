@@ -22,10 +22,13 @@ func main() {
 
 	restaurantRepo := repository.NewRestaurantRepo(db.DB)
 	restaurantService := service.NewRestaurantService(restaurantRepo)
+	menuSectionRepo := repository.NewMenuSectionRepo(db.DB)
+	menuSectionService := service.NewMenuSectionService(menuSectionRepo)
 
 	app := fiber.New()
 
 	rest.SetupRestaurantRoutes(app, restaurantService, vld)
+	rest.SetupMenuSectionRoutes(app, menuSectionService, vld)
 
 	err = app.Listen(":" + cfg.App.PORT)
 	if err != nil {

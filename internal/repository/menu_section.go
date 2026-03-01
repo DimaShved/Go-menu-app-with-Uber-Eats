@@ -2,17 +2,17 @@ package repository
 
 import (
 	"gorm.io/gorm"
-	"uber-go-menu-copy/internal/domain"
+	"uber-go-menu/internal/domain"
 )
 
 type MenuSectionRepo interface {
-	IGenericRepository[*domain.MenuSections]
+	IGenericRepository[*domain.MenuSection]
 }
 
 type menuSectionRepo struct {
-	IGenericRepository[*domain.MenuSections]
+	IGenericRepository[*domain.MenuSection]
 }
 
 func NewMenuSectionRepo(db *gorm.DB) MenuSectionRepo {
-	return &menuSectionRepo{NewGenericRepo[*domain.MenuSections](db)}
+	return &menuSectionRepo{NewGenericRepo[*domain.MenuSection](db)}
 }

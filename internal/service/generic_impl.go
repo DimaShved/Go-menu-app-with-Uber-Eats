@@ -3,28 +3,32 @@ package service
 import (
 	"context"
 	"github.com/google/uuid"
-	"uber-go-menu-copy/internal/domain/interfaces"
-	"uber-go-menu-copy/internal/repository"
+	"uber-go-menu/internal/domain/interfaces"
+	"uber-go-menu/internal/repository"
 )
 
-type genericService[T any] struct {
+type genericService[T interfaces.Identifiable] struct {
 	repo repository.IGenericRepository[T]
 }
 
-func NewGenericService[T any](repo repository.IGenericRepository[T]) IGenericService[T] {
+func NewGenericService[T interfaces.Identifiable](repo repository.IGenericRepository[T]) IGenericService[T] {
 	return &genericService[T]{repo: repo}
 }
 
 func (s *genericService[T]) Save(ctx context.Context, entity T) (T, error) {
-	var preloads []string
-	if p, ok := any(entity).(interfaces.Preloader); ok {
-		preloads = p.PreloadRelations()
-	}
-	err := s.repo.Save(ctx, entity, preloads...)
+	err := s.repo.Save(ctx, &entity)
 	if err != nil {
-		return entity, err
+		var zero T
+		return zero, err
 	}
-	return entity, nil
+
+	fetchedEntity, err := s.repo.FindOneById(ctx, entity.GetID())
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+
+	return *fetchedEntity, nil
 }
 
 func (s *genericService[T]) FindAll(ctx context.Context) ([]T, error) {

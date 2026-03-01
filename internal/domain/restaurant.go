@@ -6,7 +6,7 @@ import (
 )
 
 type Restaurant struct {
-	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()" json:"id,omitempty"`
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id,omitempty"`
 	Name      string     `gorm:"type:varchar(255);not null" json:"name" validate:"required,min=2,max=255"`
 	Address   string     `gorm:"type:varchar(255);not null" json:"address" validate:"required,min=2,max=255"`
 	CreatedAt time.Time  `gorm:"autoCreateTime" json:"created_at,omitempty"`

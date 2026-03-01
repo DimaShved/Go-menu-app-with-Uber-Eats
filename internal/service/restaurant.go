@@ -1,8 +1,8 @@
 package service
 
 import (
-	"uber-go-menu-copy/internal/domain"
-	"uber-go-menu-copy/internal/repository"
+	"uber-go-menu/internal/domain"
+	"uber-go-menu/internal/repository"
 )
 
 type RestaurantService struct {

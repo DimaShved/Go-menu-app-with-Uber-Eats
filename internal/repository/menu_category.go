@@ -2,7 +2,7 @@ package repository
 
 import (
 	"gorm.io/gorm"
-	"uber-go-menu-copy/internal/domain"
+	"uber-go-menu/internal/domain"
 )
 
 type MenuCategoryRepo interface {

@@ -1,24 +1,21 @@
 package config
 
 import (
-	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"log/slog"
-	"os"
+	"uber-go-menu/internal/pkg/errorx"
 )
 
-func LoadConfig() Config {
+func LoadConfig() (Config, error) {
 	var config Config
 
 	if err := godotenv.Load(); err != nil {
-		slog.Error(fmt.Sprintf("Error loading .env file: %v", err))
+		return config, errorx.ErrConfigLoad.WithDetails(err.Error())
 	}
 
 	if err := envconfig.Process("", &config); err != nil {
-		slog.Error(fmt.Sprintf("Error config validation: %v", err))
-		os.Exit(1)
+		return config, errorx.ErrValidation.WithDetails(err.Error())
 	}
 
-	return config
+	return config, nil
 }

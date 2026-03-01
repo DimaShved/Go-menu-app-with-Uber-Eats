@@ -7,13 +7,12 @@ import (
 	"gorm.io/gorm"
 	"log/slog"
 	"time"
-	"uber-go-menu-copy/internal/config"
-	"uber-go-menu-copy/internal/domain"
+	"uber-go-menu/internal/config"
+	"uber-go-menu/internal/domain"
+	"uber-go-menu/internal/pkg/errorx"
 )
 
-var DB *gorm.DB
-
-func Connect(cfg *config.DatabaseConfig) error {
+func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		cfg.Host,
 		cfg.User,
@@ -23,25 +22,30 @@ func Connect(cfg *config.DatabaseConfig) error {
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		return nil, errorx.ErrDatabase.Wrap(err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err = database.WithContext(ctx).AutoMigrate(
+	models := []interface{}{
 		&domain.Restaurant{},
-		&domain.MenuSections{},
+		&domain.MenuSection{},
 		&domain.MenuCategory{},
 		&domain.MenuItem{},
-	)
-
-	if err != nil {
-		slog.Error("Failed to migrate database", "error", err)
-		return fmt.Errorf("failed to migrate database: %w", err)
+		&domain.MenuAvailability{},
+		&domain.Variation{},
+		&domain.VariationOption{},
+		&domain.Modifier{},
+		&domain.ModifierOption{},
 	}
 
-	DB = database
-	slog.Info("Connection to DB established.")
-	return nil
+	err = database.WithContext(ctx).AutoMigrate(models...)
+
+	if err != nil {
+		return nil, errorx.ErrDatabase.Wrap(fmt.Errorf("failed to migrate database: %w", err))
+	}
+
+	slog.Info("Database connection established and migrations completed.")
+	return database, nil
 }

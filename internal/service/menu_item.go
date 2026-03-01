@@ -1,10 +1,13 @@
 package service
 
 import (
-	"fmt"
+	"context"
 	"github.com/google/uuid"
-	"uber-go-menu-copy/internal/domain"
-	"uber-go-menu-copy/internal/repository"
+	"gorm.io/gorm"
+	"net/http"
+	"uber-go-menu/internal/domain"
+	"uber-go-menu/internal/pkg/errorx"
+	"uber-go-menu/internal/repository"
 )
 
 type MenuItemService struct {
@@ -24,17 +27,20 @@ func NewMenuItemService(menuItemRepo repository.MenuItemRepo) *MenuItemService {
 	}
 }
 
-func (s *MenuItemService) CreateWithCategories(menuItem *domain.MenuItem, categoryIDs []string) (*domain.MenuItem, error) {
-	var uuids []uuid.UUID
+func (s *MenuItemService) CreateWithCategories(ctx context.Context, menuItem *domain.MenuItem, categoryIDs []string) (*domain.MenuItem, error) {
+	uuids := make([]uuid.UUID, 0, len(categoryIDs))
 	for _, id := range categoryIDs {
 		catID, err := uuid.Parse(id)
 		if err != nil {
-			return nil, fmt.Errorf("invalid category ID: %v", id)
+			return nil, errorx.NewAPIError(107, http.StatusBadRequest, "invalid category ID: "+id, "")
 		}
 		uuids = append(uuids, catID)
 	}
 
-	if err := s.menuItemRepo.CreateWithCategories(menuItem, uuids); err != nil {
+	err := s.menuItemRepo.DB().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return s.menuItemRepo.CreateWithCategoriesTx(ctx, tx, menuItem, uuids)
+	})
+	if err != nil {
 		return nil, err
 	}
 

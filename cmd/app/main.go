@@ -1,43 +1,46 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v3"
 	"log/slog"
 	"os"
-	"uber-go-menu-copy/internal/config"
-	"uber-go-menu-copy/internal/pkg/db"
-	"uber-go-menu-copy/internal/pkg/validator"
-	"uber-go-menu-copy/internal/repository"
-	"uber-go-menu-copy/internal/routes/rest"
-	"uber-go-menu-copy/internal/service"
+	"time"
+	"uber-go-menu/internal/app"
+	"uber-go-menu/internal/config"
+	"uber-go-menu/internal/pkg/db"
+	"uber-go-menu/internal/pkg/validator"
 )
 
 func main() {
-	cfg := config.LoadConfig()
-	err := db.Connect(&cfg.Database)
+	logLevel := slog.LevelInfo
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevel,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				a.Value = slog.StringValue(a.Value.Time().Format(time.RFC3339Nano))
+			}
+			return a
+		},
+	}))
+	slog.SetDefault(logger)
+
+	cfg, err := config.LoadConfig()
 	if err != nil {
+		slog.Error("Failed to load configuration", slog.Any("error", err))
 		os.Exit(1)
 	}
-	vld := validator.Validate()
 
-	restaurantRepo := repository.NewRestaurantRepo(db.DB)
-	restaurantService := service.NewRestaurantService(restaurantRepo)
-	menuSectionRepo := repository.NewMenuSectionRepo(db.DB)
-	menuSectionService := service.NewMenuSectionService(menuSectionRepo)
-	menuCategoryRepo := repository.NewMenuCategoryRepo(db.DB)
-	menuCategoryService := service.NewMenuCategoryService(menuCategoryRepo)
-	menuItemRepo := repository.NewMenuItemRepo(db.DB)
-	menuItemService := service.NewMenuItemService(menuItemRepo)
-
-	app := fiber.New()
-
-	rest.SetupRestaurantRoutes(app, restaurantService, vld)
-	rest.SetupMenuSectionRoutes(app, menuSectionService, vld)
-	rest.SetupMenuCategoryRoutes(app, menuCategoryService, vld)
-	rest.SetupMenuItemRoutes(app, menuItemService, vld)
-
-	err = app.Listen(":" + cfg.App.PORT)
+	database, err := db.Connect(&cfg.Database)
 	if err != nil {
-		slog.Error("Error starting server: %v", err)
+		slog.Error("Failed to connect to database", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	vld := validator.Validate()
+	server := app.NewHTTPServer(database, vld)
+
+	slog.Info("Starting server", slog.String("port", cfg.App.PORT))
+	if err := server.Listen(":" + cfg.App.PORT); err != nil {
+		slog.Error("Failed to start server", slog.Any("error", err))
+		os.Exit(1)
 	}
 }

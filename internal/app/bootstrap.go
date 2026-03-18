@@ -4,9 +4,16 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
-	"uber-go-menu/internal/repository"
-	"uber-go-menu/internal/routes/rest"
-	"uber-go-menu/internal/service"
+	"uber-go-menu/internal/platform/crud"
+	"uber-go-menu/internal/resources/menu_availability"
+	"uber-go-menu/internal/resources/menu_category"
+	"uber-go-menu/internal/resources/menu_item"
+	"uber-go-menu/internal/resources/menu_section"
+	"uber-go-menu/internal/resources/modifier"
+	"uber-go-menu/internal/resources/modifier_option"
+	"uber-go-menu/internal/resources/restaurant"
+	"uber-go-menu/internal/resources/variation"
+	"uber-go-menu/internal/resources/variation_option"
 )
 
 func NewHTTPServer(database *gorm.DB, vld *validator.Validate) *fiber.App {
@@ -16,42 +23,17 @@ func NewHTTPServer(database *gorm.DB, vld *validator.Validate) *fiber.App {
 
 	app.Use(requestLogger())
 
-	restaurantRepo := repository.NewRestaurantRepo(database)
-	restaurantService := service.NewRestaurantService(restaurantRepo)
-
-	menuSectionRepo := repository.NewMenuSectionRepo(database)
-	menuSectionService := service.NewMenuSectionService(menuSectionRepo)
-
-	menuCategoryRepo := repository.NewMenuCategoryRepo(database)
-	menuCategoryService := service.NewMenuCategoryService(menuCategoryRepo)
-
-	menuItemRepo := repository.NewMenuItemRepo(database)
-	menuItemService := service.NewMenuItemService(menuItemRepo)
-
-	menuAvailabilityRepo := repository.NewMenuAvailabilityRepo(database)
-	menuAvailabilityService := service.NewMenuAvailabilityService(menuAvailabilityRepo)
-
-	variationOptionRepo := repository.NewVariationOptionRepo(database)
-	variationOptionService := service.NewVariationOptionService(variationOptionRepo)
-
-	variationRepo := repository.NewVariationRepo(database)
-	variationService := service.NewVariationService(variationRepo, variationOptionService)
-
-	modifierOptionRepo := repository.NewModifierOptionRepo(database)
-	modifierOptionService := service.NewModifierOptionService(modifierOptionRepo)
-
-	modifierRepo := repository.NewModifierRepo(database)
-	modifierService := service.NewModifierService(modifierRepo, modifierOptionService)
-
-	rest.SetupRestaurantRoutes(app, restaurantService, vld)
-	rest.SetupMenuSectionRoutes(app, menuSectionService, vld)
-	rest.SetupMenuCategoryRoutes(app, menuCategoryService, vld)
-	rest.SetupMenuItemRoutes(app, menuItemService, vld)
-	rest.SetupMenuAvailabilityRoutes(app, menuAvailabilityService, vld)
-	rest.SetupVariationRoutes(app, variationService, vld)
-	rest.SetupVariationOptionRoutes(app, variationOptionService, vld)
-	rest.SetupModifierOptionRoutes(app, modifierOptionService, vld)
-	rest.SetupModifierRoutes(app, modifierService, vld)
+	registry := crud.NewRegistry()
+	registry.Register(restaurant.New(database, vld))
+	registry.Register(menu_section.New(database, vld))
+	registry.Register(menu_category.New(database, vld))
+	registry.Register(menu_item.New(database, vld))
+	registry.Register(menu_availability.New(database, vld))
+	registry.Register(variation.New(database, vld))
+	registry.Register(variation_option.New(database, vld))
+	registry.Register(modifier.New(database, vld))
+	registry.Register(modifier_option.New(database, vld))
+	registry.Mount(app)
 
 	return app
 }

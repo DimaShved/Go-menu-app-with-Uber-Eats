@@ -36,7 +36,7 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) Regist
 func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) create(c fiber.Ctx) error {
 	request, err := decodeBody[CreateRequest](c)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 
 	ctx, cancel := h.requestContext(c)
@@ -44,7 +44,7 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) create
 
 	response, err := h.service.Create(ctx, request)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 	return c.Status(fiber.StatusCreated).JSON(response)
 }
@@ -55,7 +55,7 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) list(c
 
 	response, err := h.service.List(ctx)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 	return c.JSON(response)
 }
@@ -63,7 +63,7 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) list(c
 func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) getByID(c fiber.Ctx) error {
 	id, err := parseID(c)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 
 	ctx, cancel := h.requestContext(c)
@@ -71,7 +71,7 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) getByI
 
 	response, err := h.service.GetByID(ctx, id)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 	return c.JSON(response)
 }
@@ -79,12 +79,12 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) getByI
 func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) update(c fiber.Ctx) error {
 	id, err := parseID(c)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 
 	request, err := decodeBody[UpdateRequest](c)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 
 	ctx, cancel := h.requestContext(c)
@@ -92,7 +92,7 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) update
 
 	response, err := h.service.Update(ctx, id, request)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 	return c.JSON(response)
 }
@@ -100,14 +100,14 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) update
 func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) delete(c fiber.Ctx) error {
 	id, err := parseID(c)
 	if err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 
 	ctx, cancel := h.requestContext(c)
 	defer cancel()
 
 	if err := h.service.Delete(ctx, id); err != nil {
-		return writeError(c, err)
+		return WriteError(c, err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -132,7 +132,7 @@ func parseID(c fiber.Ctx) (uuid.UUID, error) {
 	return id, nil
 }
 
-func writeError(c fiber.Ctx, err error) error {
+func WriteError(c fiber.Ctx, err error) error {
 	var apiErr *errorx.APIError
 	if errors.As(err, &apiErr) {
 		return c.Status(apiErr.HTTPStatus).JSON(apiErr)

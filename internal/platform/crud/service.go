@@ -19,18 +19,15 @@ func NewService[Entity any, CreateRequest any, UpdateRequest any, Response any](
 	}
 }
 
-func (s *ResourceService[Entity, CreateRequest, UpdateRequest, Response]) Create(ctx context.Context, request CreateRequest) (any, error) {
+func (s *ResourceService[Entity, CreateRequest, UpdateRequest, Response]) Create(ctx context.Context, request CreateRequest) (Response, error) {
+	var zero Response
 	if err := s.validate(request); err != nil {
-		return nil, err
-	}
-
-	if s.resource.CreateOverride != nil {
-		return s.resource.CreateOverride(ctx, request)
+		return zero, err
 	}
 
 	entity, err := s.resource.MapCreate(request)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	var created *Entity
@@ -53,14 +50,10 @@ func (s *ResourceService[Entity, CreateRequest, UpdateRequest, Response]) Create
 		created = reloaded
 		return nil
 	}); err != nil {
-		return nil, err
+		return zero, err
 	}
 
-	response, err := s.response(ctx, created)
-	if err != nil {
-		return nil, err
-	}
-	return response, nil
+	return s.response(ctx, created)
 }
 
 func (s *ResourceService[Entity, CreateRequest, UpdateRequest, Response]) Update(ctx context.Context, id uuid.UUID, request UpdateRequest) (Response, error) {

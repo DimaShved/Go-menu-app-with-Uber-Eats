@@ -19,10 +19,6 @@ type MenuSection struct {
 	MenuAvailability   *MenuAvailability `gorm:"foreignKey:MenuAvailabilityID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"menu_availability,omitempty"`
 }
 
-func (ms *MenuSection) PreloadRelations() []string {
-	return []string{"Restaurant"}
-}
-
 func (ms *MenuSection) GetID() uuid.UUID {
 	return ms.ID
 }

@@ -17,10 +17,6 @@ type MenuItem struct {
 	Categories  []MenuCategory `gorm:"many2many:item_categories;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"categories"`
 }
 
-func (mi *MenuItem) PreloadRelations() []string {
-	return []string{"Categories", "Categories.Section", "Categories.Section.Restaurant"}
-}
-
 func (mi *MenuItem) GetID() uuid.UUID {
 	return mi.ID
 }

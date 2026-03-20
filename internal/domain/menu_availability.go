@@ -16,10 +16,6 @@ type MenuAvailability struct {
 	DeletedAt     *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-func (ma *MenuAvailability) PreloadRelations() []string {
-	return []string{}
-}
-
 func (ma *MenuAvailability) GetID() uuid.UUID {
 	return ma.ID
 }

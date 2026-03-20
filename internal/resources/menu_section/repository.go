@@ -10,5 +10,9 @@ type Repository struct {
 }
 
 func NewRepository() *Repository {
-	return &Repository{GormRepository: crud.NewGormRepository[domain.MenuSection]()}
+	return &Repository{
+		GormRepository: crud.NewGormRepository[domain.MenuSection](crud.QueryOptions{
+			Preloads: []string{"Restaurant"},
+		}),
+	}
 }

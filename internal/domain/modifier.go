@@ -16,10 +16,6 @@ type Modifier struct {
 	DeletedAt         *time.Time       `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-func (m *Modifier) PreloadRelations() []string {
-	return []string{"Options"}
-}
-
 func (m *Modifier) GetID() uuid.UUID {
 	return m.ID
 }

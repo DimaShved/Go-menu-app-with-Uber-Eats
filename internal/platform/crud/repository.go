@@ -19,10 +19,20 @@ type Repository[Entity any] interface {
 	List(ctx context.Context, db *gorm.DB) ([]Entity, error)
 }
 
-type GormRepository[Entity any] struct{}
+type QueryOptions struct {
+	Preloads []string
+}
 
-func NewGormRepository[Entity any]() *GormRepository[Entity] {
-	return &GormRepository[Entity]{}
+type GormRepository[Entity any] struct {
+	queryOptions QueryOptions
+}
+
+func NewGormRepository[Entity any](options ...QueryOptions) *GormRepository[Entity] {
+	var queryOptions QueryOptions
+	if len(options) > 0 {
+		queryOptions = options[0]
+	}
+	return &GormRepository[Entity]{queryOptions: queryOptions}
 }
 
 func (r *GormRepository[Entity]) Create(ctx context.Context, tx *gorm.DB, entity *Entity) error {
@@ -50,7 +60,7 @@ func (r *GormRepository[Entity]) Delete(ctx context.Context, tx *gorm.DB, id uui
 
 func (r *GormRepository[Entity]) GetByID(ctx context.Context, db *gorm.DB, id uuid.UUID) (*Entity, error) {
 	var entity Entity
-	query := applyPreloads[Entity](db.WithContext(ctx)).Where("deleted_at IS NULL")
+	query := r.applyQueryOptions(db.WithContext(ctx)).Where("deleted_at IS NULL")
 	if err := query.First(&entity, "id = ?", id).Error; err != nil {
 		return nil, handleDBError(err, "GetByID")
 	}
@@ -59,17 +69,14 @@ func (r *GormRepository[Entity]) GetByID(ctx context.Context, db *gorm.DB, id uu
 
 func (r *GormRepository[Entity]) List(ctx context.Context, db *gorm.DB) ([]Entity, error) {
 	var entities []Entity
-	query := applyPreloads[Entity](db.WithContext(ctx).Model(new(Entity))).Where("deleted_at IS NULL")
+	query := r.applyQueryOptions(db.WithContext(ctx).Model(new(Entity))).Where("deleted_at IS NULL")
 	err := query.Find(&entities).Error
 	return entities, handleDBError(err, "List")
 }
 
-func applyPreloads[Entity any](query *gorm.DB) *gorm.DB {
-	var entity Entity
-	if preloader, ok := any(&entity).(Preloader); ok {
-		for _, relation := range preloader.PreloadRelations() {
-			query = query.Preload(relation)
-		}
+func (r *GormRepository[Entity]) applyQueryOptions(query *gorm.DB) *gorm.DB {
+	for _, relation := range r.queryOptions.Preloads {
+		query = query.Preload(relation)
 	}
 	return query
 }

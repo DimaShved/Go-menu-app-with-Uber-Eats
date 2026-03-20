@@ -16,10 +16,6 @@ type Variation struct {
 	DeletedAt  *time.Time        `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-func (v *Variation) PreloadRelations() []string {
-	return []string{"Options", "Category.Section", "Category.Section.Restaurant"}
-}
-
 func (v *Variation) GetID() uuid.UUID {
 	return v.ID
 }

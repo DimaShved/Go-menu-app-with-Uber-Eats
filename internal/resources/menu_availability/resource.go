@@ -71,12 +71,12 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 func (h *Handler) batchUpsert(c fiber.Ctx) error {
 	var request BatchUpsertRequest
 	if err := json.Unmarshal(c.Body(), &request); err != nil {
-		return crud.WriteError(c, errorx.ErrInvalidInput.WithDetails("Invalid JSON body"))
+		return errorx.ErrInvalidInput.WithDetails("Invalid JSON body")
 	}
 
 	if h.validator != nil {
 		if err := h.validator.Struct(request); err != nil {
-			return crud.WriteError(c, errorx.ErrInvalidInput.WithDetails(fmt.Sprintf("Input validation failed: %v", err)))
+			return errorx.ErrInvalidInput.WithDetails(fmt.Sprintf("Input validation failed: %v", err))
 		}
 	}
 
@@ -85,7 +85,7 @@ func (h *Handler) batchUpsert(c fiber.Ctx) error {
 
 	response, err := h.upsertBatch(ctx, request)
 	if err != nil {
-		return crud.WriteError(c, err)
+		return err
 	}
 	return c.Status(fiber.StatusOK).JSON(response)
 }

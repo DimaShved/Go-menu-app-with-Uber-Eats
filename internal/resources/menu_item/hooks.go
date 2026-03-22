@@ -11,7 +11,7 @@ import (
 )
 
 type Hooks struct {
-	crud.NoopHooks[domain.MenuItem, CreateRequest, UpdateRequest, domain.MenuItem]
+	crud.NoopHooks[domain.MenuItem, CreateRequest, UpdateRequest, Response]
 }
 
 func (Hooks) AfterCreate(ctx context.Context, hookCtx crud.HookContext, request *CreateRequest, entity *domain.MenuItem) error {

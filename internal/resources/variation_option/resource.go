@@ -9,7 +9,7 @@ import (
 )
 
 func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
-	return crud.NewHandler(crud.Resource[domain.VariationOption, CreateRequest, UpdateRequest, domain.VariationOption]{
+	return crud.NewHandler(crud.Resource[domain.VariationOption, CreateRequest, UpdateRequest, Response]{
 		Name:       "variation_option",
 		Path:       "/api/variation-option",
 		Repository: NewRepository(),
@@ -33,8 +33,18 @@ func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 			entity.VariationID = request.VariationID
 			return nil
 		},
-		MapResponse: func(entity *domain.VariationOption) (domain.VariationOption, error) {
-			return *entity, nil
-		},
+		MapResponse: mapResponse,
 	})
+}
+
+func mapResponse(entity *domain.VariationOption) (Response, error) {
+	return Response{
+		ID:          entity.ID,
+		Name:        entity.Name,
+		Price:       entity.Price,
+		IsAvailable: entity.IsAvailable,
+		VariationID: entity.VariationID,
+		CreatedAt:   entity.CreatedAt,
+		UpdatedAt:   entity.UpdatedAt,
+	}, nil
 }

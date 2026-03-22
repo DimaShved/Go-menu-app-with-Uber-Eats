@@ -9,7 +9,7 @@ import (
 )
 
 func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
-	return crud.NewHandler(crud.Resource[domain.Variation, CreateRequest, UpdateRequest, domain.Variation]{
+	return crud.NewHandler(crud.Resource[domain.Variation, CreateRequest, UpdateRequest, Response]{
 		Name:       "variation",
 		Path:       "/api/variation",
 		Repository: NewRepository(),
@@ -30,8 +30,34 @@ func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 			entity.CategoryID = request.CategoryID
 			return nil
 		},
-		MapResponse: func(entity *domain.Variation) (domain.Variation, error) {
-			return *entity, nil
-		},
+		MapResponse: mapResponse,
 	})
+}
+
+func mapResponse(entity *domain.Variation) (Response, error) {
+	options := make([]OptionResponse, 0, len(entity.Options))
+	for _, option := range entity.Options {
+		options = append(options, mapOptionResponse(option))
+	}
+
+	return Response{
+		ID:         entity.ID,
+		Name:       entity.Name,
+		Options:    options,
+		CategoryID: entity.CategoryID,
+		CreatedAt:  entity.CreatedAt,
+		UpdatedAt:  entity.UpdatedAt,
+	}, nil
+}
+
+func mapOptionResponse(entity domain.VariationOption) OptionResponse {
+	return OptionResponse{
+		ID:          entity.ID,
+		Name:        entity.Name,
+		Price:       entity.Price,
+		IsAvailable: entity.IsAvailable,
+		VariationID: entity.VariationID,
+		CreatedAt:   entity.CreatedAt,
+		UpdatedAt:   entity.UpdatedAt,
+	}
 }

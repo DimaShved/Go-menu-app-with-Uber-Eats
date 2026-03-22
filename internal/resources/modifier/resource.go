@@ -9,7 +9,7 @@ import (
 )
 
 func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
-	return crud.NewHandler(crud.Resource[domain.Modifier, CreateRequest, UpdateRequest, domain.Modifier]{
+	return crud.NewHandler(crud.Resource[domain.Modifier, CreateRequest, UpdateRequest, Response]{
 		Name:       "modifier",
 		Path:       "/api/modifier",
 		Repository: NewRepository(),
@@ -32,8 +32,36 @@ func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 			entity.CategoryID = request.CategoryID
 			return nil
 		},
-		MapResponse: func(entity *domain.Modifier) (domain.Modifier, error) {
-			return *entity, nil
-		},
+		MapResponse: mapResponse,
 	})
+}
+
+func mapResponse(entity *domain.Modifier) (Response, error) {
+	options := make([]OptionResponse, 0, len(entity.Options))
+	for _, option := range entity.Options {
+		options = append(options, mapOptionResponse(option))
+	}
+
+	return Response{
+		ID:                entity.ID,
+		Name:              entity.Name,
+		TotalMaxSelection: entity.TotalMaxSelection,
+		Options:           options,
+		CategoryID:        entity.CategoryID,
+		CreatedAt:         entity.CreatedAt,
+		UpdatedAt:         entity.UpdatedAt,
+	}, nil
+}
+
+func mapOptionResponse(entity domain.ModifierOption) OptionResponse {
+	return OptionResponse{
+		ID:           entity.ID,
+		Name:         entity.Name,
+		Price:        entity.Price,
+		MaxSelection: entity.MaxSelection,
+		IsAvailable:  entity.IsAvailable,
+		ModifierID:   entity.ModifierID,
+		CreatedAt:    entity.CreatedAt,
+		UpdatedAt:    entity.UpdatedAt,
+	}
 }

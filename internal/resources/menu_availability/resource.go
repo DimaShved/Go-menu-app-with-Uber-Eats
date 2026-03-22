@@ -26,7 +26,7 @@ type Handler struct {
 func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 	repository := NewRepository()
 	txManager := crud.NewTxManager(db)
-	crudHandler := crud.NewHandler(crud.Resource[domain.MenuAvailability, CreateRequest, UpdateRequest, domain.MenuAvailability]{
+	crudHandler := crud.NewHandler(crud.Resource[domain.MenuAvailability, CreateRequest, UpdateRequest, Response]{
 		Name:       "menu_availability",
 		Path:       path,
 		Repository: repository,
@@ -50,9 +50,7 @@ func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 			entity.CloseTime = request.CloseTime
 			return nil
 		},
-		MapResponse: func(entity *domain.MenuAvailability) (domain.MenuAvailability, error) {
-			return *entity, nil
-		},
+		MapResponse: mapResponse,
 	})
 
 	return &Handler{
@@ -90,7 +88,7 @@ func (h *Handler) batchUpsert(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(response)
 }
 
-func (h *Handler) upsertBatch(ctx context.Context, request BatchUpsertRequest) ([]domain.MenuAvailability, error) {
+func (h *Handler) upsertBatch(ctx context.Context, request BatchUpsertRequest) ([]Response, error) {
 	availabilities, err := buildAvailabilities(request)
 	if err != nil {
 		return nil, err
@@ -108,7 +106,16 @@ func (h *Handler) upsertBatch(ctx context.Context, request BatchUpsertRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+
+	response := make([]Response, 0, len(result))
+	for i := range result {
+		item, err := mapResponse(&result[i])
+		if err != nil {
+			return nil, err
+		}
+		response = append(response, item)
+	}
+	return response, nil
 }
 
 func buildAvailabilities(request BatchUpsertRequest) ([]domain.MenuAvailability, error) {
@@ -133,4 +140,16 @@ func buildAvailabilities(request BatchUpsertRequest) ([]domain.MenuAvailability,
 	}
 
 	return availabilities, nil
+}
+
+func mapResponse(entity *domain.MenuAvailability) (Response, error) {
+	return Response{
+		ID:            entity.ID,
+		MenuSectionID: entity.MenuSectionId,
+		DayOfWeek:     entity.DayOfWeek,
+		OpenTime:      entity.OpenTime,
+		CloseTime:     entity.CloseTime,
+		CreatedAt:     entity.CreatedAt,
+		UpdatedAt:     entity.UpdatedAt,
+	}, nil
 }

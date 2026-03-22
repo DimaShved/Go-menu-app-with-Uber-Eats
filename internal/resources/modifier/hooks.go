@@ -9,7 +9,7 @@ import (
 )
 
 type Hooks struct {
-	crud.NoopHooks[domain.Modifier, CreateRequest, UpdateRequest, domain.Modifier]
+	crud.NoopHooks[domain.Modifier, CreateRequest, UpdateRequest, Response]
 }
 
 func (Hooks) AfterCreate(ctx context.Context, hookCtx crud.HookContext, request *CreateRequest, entity *domain.Modifier) error {

@@ -1,6 +1,10 @@
 package menu_availability
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type AvailabilityRequest struct {
 	DayOfWeek int `json:"day_of_week" validate:"required,oneof=1 2 3 4 5 6 7"`
@@ -21,3 +25,13 @@ type BatchUpsertRequest struct {
 }
 
 type UpdateRequest = CreateRequest
+
+type Response struct {
+	ID            uuid.UUID `json:"id,omitempty"`
+	MenuSectionID uuid.UUID `json:"menu_section_id"`
+	DayOfWeek     int       `json:"day_of_week"`
+	OpenTime      int       `json:"open_time"`
+	CloseTime     int       `json:"close_time"`
+	CreatedAt     time.Time `json:"created_at,omitempty"`
+	UpdatedAt     time.Time `json:"updated_at,omitempty"`
+}

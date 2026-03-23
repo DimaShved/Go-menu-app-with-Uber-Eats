@@ -9,13 +9,14 @@ import (
 )
 
 func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
+	repository := NewRepository()
 	return crud.NewHandler(crud.Resource[domain.MenuItem, CreateRequest, UpdateRequest, Response]{
 		Name:       "menu_item",
 		Path:       "/api/menu-item",
-		Repository: NewRepository(),
+		Repository: repository,
 		TxManager:  crud.NewTxManager(db),
 		Validator:  validate,
-		Hooks:      Hooks{},
+		Hooks:      Hooks{repository: repository},
 		GetID: func(entity *domain.MenuItem) uuid.UUID {
 			return entity.ID
 		},

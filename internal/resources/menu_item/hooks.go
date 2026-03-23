@@ -2,7 +2,6 @@ package menu_item
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"uber-go-menu/internal/domain"
@@ -12,27 +11,22 @@ import (
 
 type Hooks struct {
 	crud.NoopHooks[domain.MenuItem, CreateRequest, UpdateRequest, Response]
+	repository *Repository
 }
 
-func (Hooks) AfterCreate(ctx context.Context, hookCtx crud.HookContext, request *CreateRequest, entity *domain.MenuItem) error {
+func (h Hooks) AfterCreate(ctx context.Context, hookCtx crud.HookContext, request *CreateRequest, entity *domain.MenuItem) error {
+	if len(request.Categories) == 0 {
+		return nil
+	}
+
+	categoryIDs := make([]uuid.UUID, 0, len(request.Categories))
 	for _, id := range request.Categories {
 		categoryID, err := uuid.Parse(id)
 		if err != nil {
 			return errorx.ErrInvalidInput.WithDetails("invalid category ID: " + id)
 		}
-
-		var category domain.MenuCategory
-		if err := hookCtx.Tx.WithContext(ctx).First(&category, "id = ?", categoryID).Error; err != nil {
-			return errorx.ErrDatabaseQuery.WithDetails(
-				fmt.Sprintf("failed to find category with ID %v: %v", categoryID, err),
-			)
-		}
-
-		if err := hookCtx.Tx.WithContext(ctx).Model(entity).Association("Categories").Append(&category); err != nil {
-			return errorx.ErrDatabaseQuery.WithDetails(
-				fmt.Sprintf("failed to associate category %v with menu item: %v", categoryID, err),
-			)
-		}
+		categoryIDs = append(categoryIDs, categoryID)
 	}
-	return nil
+
+	return h.repository.AttachCategories(ctx, hookCtx.Tx, entity, categoryIDs)
 }

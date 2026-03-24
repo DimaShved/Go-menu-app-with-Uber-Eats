@@ -15,7 +15,7 @@ type ResourceHandler[Entity any, CreateRequest any, UpdateRequest any, Response 
 }
 
 func NewHandler[Entity any, CreateRequest any, UpdateRequest any, Response any](resource Resource[Entity, CreateRequest, UpdateRequest, Response]) *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response] {
-	resource = resource.withDefaults()
+	resource = resource.prepareForHandler()
 	return &ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]{
 		resource: resource,
 		service:  NewService(resource),

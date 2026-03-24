@@ -15,7 +15,7 @@ type ResourceService[Entity any, CreateRequest any, UpdateRequest any, Response 
 
 func NewService[Entity any, CreateRequest any, UpdateRequest any, Response any](resource Resource[Entity, CreateRequest, UpdateRequest, Response]) *ResourceService[Entity, CreateRequest, UpdateRequest, Response] {
 	return &ResourceService[Entity, CreateRequest, UpdateRequest, Response]{
-		resource: resource.withDefaults(),
+		resource: resource.prepareForService(),
 	}
 }
 
@@ -144,7 +144,7 @@ func (s *ResourceService[Entity, CreateRequest, UpdateRequest, Response]) List(c
 }
 
 func (s *ResourceService[Entity, CreateRequest, UpdateRequest, Response]) validate(request any) error {
-	if s.resource.Validator == nil {
+	if isNil(s.resource.Validator) {
 		return nil
 	}
 	if err := s.resource.Validator.Struct(request); err != nil {

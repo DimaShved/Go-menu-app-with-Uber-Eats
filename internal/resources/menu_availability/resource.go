@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"uber-go-menu/internal/domain"
 	"uber-go-menu/internal/pkg/errorx"
@@ -32,9 +31,6 @@ func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 		Repository: repository,
 		TxManager:  txManager,
 		Validator:  validate,
-		GetID: func(entity *domain.MenuAvailability) uuid.UUID {
-			return entity.ID
-		},
 		MapCreate: func(request CreateRequest) (*domain.MenuAvailability, error) {
 			return &domain.MenuAvailability{
 				MenuSectionId: request.MenuSectionID,

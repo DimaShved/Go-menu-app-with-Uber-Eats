@@ -2,7 +2,6 @@ package modifier
 
 import (
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"uber-go-menu/internal/domain"
 	"uber-go-menu/internal/platform/crud"
@@ -17,9 +16,6 @@ func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 		TxManager:  crud.NewTxManager(db),
 		Validator:  validate,
 		Hooks:      Hooks{repository: repository},
-		GetID: func(entity *domain.Modifier) uuid.UUID {
-			return entity.ID
-		},
 		MapCreate: func(request CreateRequest) (*domain.Modifier, error) {
 			return &domain.Modifier{
 				Name:              request.Name,

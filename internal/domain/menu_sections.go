@@ -19,6 +19,10 @@ type MenuSection struct {
 	MenuAvailability   *MenuAvailability `gorm:"foreignKey:MenuAvailabilityID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"menu_availability,omitempty"`
 }
 
-func (ms *MenuSection) GetID() uuid.UUID {
+func (ms MenuSection) GetID() uuid.UUID {
 	return ms.ID
+}
+
+func (ms MenuSection) GetDeletedAt() *time.Time {
+	return ms.DeletedAt
 }

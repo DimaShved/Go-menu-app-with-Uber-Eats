@@ -17,6 +17,10 @@ type ModifierOption struct {
 	DeletedAt    *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-func (mo *ModifierOption) GetID() uuid.UUID {
+func (mo ModifierOption) GetID() uuid.UUID {
 	return mo.ID
+}
+
+func (mo ModifierOption) GetDeletedAt() *time.Time {
+	return mo.DeletedAt
 }

@@ -9,12 +9,12 @@ import (
 	"uber-go-menu/internal/pkg/errorx"
 )
 
-type ResourceHandler[Entity any, CreateRequest any, UpdateRequest any, Response any] struct {
+type ResourceHandler[Entity SoftDeleteEntity, CreateRequest any, UpdateRequest any, Response any] struct {
 	resource Resource[Entity, CreateRequest, UpdateRequest, Response]
 	service  *ResourceService[Entity, CreateRequest, UpdateRequest, Response]
 }
 
-func NewHandler[Entity any, CreateRequest any, UpdateRequest any, Response any](resource Resource[Entity, CreateRequest, UpdateRequest, Response]) *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response] {
+func NewHandler[Entity SoftDeleteEntity, CreateRequest any, UpdateRequest any, Response any](resource Resource[Entity, CreateRequest, UpdateRequest, Response]) *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response] {
 	resource = resource.prepareForHandler()
 	return &ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]{
 		resource: resource,

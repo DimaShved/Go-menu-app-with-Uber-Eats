@@ -17,6 +17,10 @@ type MenuItem struct {
 	Categories  []MenuCategory `gorm:"many2many:item_categories;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"categories"`
 }
 
-func (mi *MenuItem) GetID() uuid.UUID {
+func (mi MenuItem) GetID() uuid.UUID {
 	return mi.ID
+}
+
+func (mi MenuItem) GetDeletedAt() *time.Time {
+	return mi.DeletedAt
 }

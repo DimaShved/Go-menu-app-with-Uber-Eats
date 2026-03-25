@@ -9,11 +9,11 @@ import (
 	"uber-go-menu/internal/pkg/errorx"
 )
 
-type ResourceService[Entity any, CreateRequest any, UpdateRequest any, Response any] struct {
+type ResourceService[Entity SoftDeleteEntity, CreateRequest any, UpdateRequest any, Response any] struct {
 	resource Resource[Entity, CreateRequest, UpdateRequest, Response]
 }
 
-func NewService[Entity any, CreateRequest any, UpdateRequest any, Response any](resource Resource[Entity, CreateRequest, UpdateRequest, Response]) *ResourceService[Entity, CreateRequest, UpdateRequest, Response] {
+func NewService[Entity SoftDeleteEntity, CreateRequest any, UpdateRequest any, Response any](resource Resource[Entity, CreateRequest, UpdateRequest, Response]) *ResourceService[Entity, CreateRequest, UpdateRequest, Response] {
 	return &ResourceService[Entity, CreateRequest, UpdateRequest, Response]{
 		resource: resource.prepareForService(),
 	}
@@ -43,7 +43,7 @@ func (s *ResourceService[Entity, CreateRequest, UpdateRequest, Response]) Create
 			return err
 		}
 
-		reloaded, err := s.resource.Repository.GetByID(ctx, tx, s.resource.GetID(entity))
+		reloaded, err := s.resource.Repository.GetByID(ctx, tx, (*entity).GetID())
 		if err != nil {
 			return err
 		}

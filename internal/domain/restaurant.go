@@ -14,6 +14,10 @@ type Restaurant struct {
 	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-func (r *Restaurant) GetID() uuid.UUID {
+func (r Restaurant) GetID() uuid.UUID {
 	return r.ID
+}
+
+func (r Restaurant) GetDeletedAt() *time.Time {
+	return r.DeletedAt
 }

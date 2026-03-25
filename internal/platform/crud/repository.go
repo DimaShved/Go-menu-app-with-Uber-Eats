@@ -11,7 +11,7 @@ import (
 	"uber-go-menu/internal/pkg/errorx"
 )
 
-type Repository[Entity any] interface {
+type Repository[Entity SoftDeleteEntity] interface {
 	Create(ctx context.Context, tx *gorm.DB, entity *Entity) error
 	Update(ctx context.Context, tx *gorm.DB, entity *Entity) error
 	Delete(ctx context.Context, tx *gorm.DB, id uuid.UUID) error
@@ -23,11 +23,11 @@ type QueryOptions struct {
 	Preloads []string
 }
 
-type GormRepository[Entity any] struct {
+type GormRepository[Entity SoftDeleteEntity] struct {
 	queryOptions QueryOptions
 }
 
-func NewGormRepository[Entity any](options ...QueryOptions) *GormRepository[Entity] {
+func NewGormRepository[Entity SoftDeleteEntity](options ...QueryOptions) *GormRepository[Entity] {
 	var queryOptions QueryOptions
 	if len(options) > 0 {
 		queryOptions = options[0]
@@ -47,8 +47,8 @@ func (r *GormRepository[Entity]) Delete(ctx context.Context, tx *gorm.DB, id uui
 	var entity Entity
 	result := tx.WithContext(ctx).
 		Model(&entity).
-		Where("id = ? AND deleted_at IS NULL", id).
-		Update("deleted_at", time.Now())
+		Where(fmt.Sprintf("%s = ? AND %s IS NULL", idColumn, deletedAtColumn), id).
+		Update(deletedAtColumn, time.Now())
 	if result.Error != nil {
 		return handleDBError(result.Error, "Delete")
 	}
@@ -60,8 +60,8 @@ func (r *GormRepository[Entity]) Delete(ctx context.Context, tx *gorm.DB, id uui
 
 func (r *GormRepository[Entity]) GetByID(ctx context.Context, db *gorm.DB, id uuid.UUID) (*Entity, error) {
 	var entity Entity
-	query := r.applyQueryOptions(db.WithContext(ctx)).Where("deleted_at IS NULL")
-	if err := query.First(&entity, "id = ?", id).Error; err != nil {
+	query := r.applyQueryOptions(db.WithContext(ctx)).Where(fmt.Sprintf("%s IS NULL", deletedAtColumn))
+	if err := query.First(&entity, fmt.Sprintf("%s = ?", idColumn), id).Error; err != nil {
 		return nil, handleDBError(err, "GetByID")
 	}
 	return &entity, nil
@@ -69,7 +69,7 @@ func (r *GormRepository[Entity]) GetByID(ctx context.Context, db *gorm.DB, id uu
 
 func (r *GormRepository[Entity]) List(ctx context.Context, db *gorm.DB) ([]Entity, error) {
 	var entities []Entity
-	query := r.applyQueryOptions(db.WithContext(ctx).Model(new(Entity))).Where("deleted_at IS NULL")
+	query := r.applyQueryOptions(db.WithContext(ctx).Model(new(Entity))).Where(fmt.Sprintf("%s IS NULL", deletedAtColumn))
 	err := query.Find(&entities).Error
 	return entities, handleDBError(err, "List")
 }

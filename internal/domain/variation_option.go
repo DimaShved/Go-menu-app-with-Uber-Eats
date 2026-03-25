@@ -16,6 +16,10 @@ type VariationOption struct {
 	DeletedAt   *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-func (vo *VariationOption) GetID() uuid.UUID {
+func (vo VariationOption) GetID() uuid.UUID {
 	return vo.ID
+}
+
+func (vo VariationOption) GetDeletedAt() *time.Time {
+	return vo.DeletedAt
 }

@@ -11,7 +11,7 @@ type HookContext struct {
 	Tx           *gorm.DB
 }
 
-type Hooks[Entity any, CreateRequest any, UpdateRequest any, Response any] interface {
+type Hooks[Entity SoftDeleteEntity, CreateRequest any, UpdateRequest any, Response any] interface {
 	BeforeCreate(context.Context, HookContext, *CreateRequest, *Entity) error
 	AfterCreate(context.Context, HookContext, *CreateRequest, *Entity) error
 	BeforeUpdate(context.Context, HookContext, *UpdateRequest, *Entity) error
@@ -21,7 +21,7 @@ type Hooks[Entity any, CreateRequest any, UpdateRequest any, Response any] inter
 	BeforeResponse(context.Context, HookContext, *Entity, *Response) error
 }
 
-type NoopHooks[Entity any, CreateRequest any, UpdateRequest any, Response any] struct{}
+type NoopHooks[Entity SoftDeleteEntity, CreateRequest any, UpdateRequest any, Response any] struct{}
 
 func (NoopHooks[Entity, CreateRequest, UpdateRequest, Response]) BeforeCreate(context.Context, HookContext, *CreateRequest, *Entity) error {
 	return nil

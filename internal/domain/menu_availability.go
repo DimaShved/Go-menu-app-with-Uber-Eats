@@ -16,6 +16,10 @@ type MenuAvailability struct {
 	DeletedAt     *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-func (ma *MenuAvailability) GetID() uuid.UUID {
+func (ma MenuAvailability) GetID() uuid.UUID {
 	return ma.ID
+}
+
+func (ma MenuAvailability) GetDeletedAt() *time.Time {
+	return ma.DeletedAt
 }

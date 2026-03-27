@@ -15,17 +15,10 @@ import (
 
 const path = "/api/menu-availability"
 
-type Handler struct {
-	crudHandler crud.RouteRegistrar
-	repository  *Repository
-	txManager   crud.TxManager
-	validator   *validator.Validate
-}
-
 func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 	repository := NewRepository()
 	txManager := crud.NewTxManager(db)
-	crudHandler := crud.NewHandler(crud.Resource[domain.MenuAvailability, CreateRequest, UpdateRequest, Response]{
+	return crud.NewHandler(crud.Resource[domain.MenuAvailability, CreateRequest, UpdateRequest, Response]{
 		Name:       "menu_availability",
 		Path:       path,
 		Repository: repository,
@@ -47,52 +40,45 @@ func New(db *gorm.DB, validate *validator.Validate) crud.RouteRegistrar {
 			return nil
 		},
 		MapResponse: mapResponse,
+		ExtraRoutes: func(router fiber.Router) {
+			router.Post("/batch", batchUpsert(repository, txManager, validate))
+		},
 	})
-
-	return &Handler{
-		crudHandler: crudHandler,
-		repository:  repository,
-		txManager:   txManager,
-		validator:   validate,
-	}
 }
 
-func (h *Handler) RegisterRoutes(app *fiber.App) {
-	h.crudHandler.RegisterRoutes(app)
-	app.Post(path+"/batch", h.batchUpsert)
-}
-
-func (h *Handler) batchUpsert(c fiber.Ctx) error {
-	var request BatchUpsertRequest
-	if err := json.Unmarshal(c.Body(), &request); err != nil {
-		return errorx.ErrInvalidInput.WithDetails("Invalid JSON body")
-	}
-
-	if h.validator != nil {
-		if err := h.validator.Struct(request); err != nil {
-			return errorx.ErrInvalidInput.WithDetails(fmt.Sprintf("Input validation failed: %v", err))
+func batchUpsert(repository *Repository, txManager crud.TxManager, validate *validator.Validate) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		var request BatchUpsertRequest
+		if err := json.Unmarshal(c.Body(), &request); err != nil {
+			return errorx.ErrInvalidInput.WithDetails("Invalid JSON body")
 		}
-	}
 
-	ctx, cancel := context.WithTimeout(c.UserContext(), crud.DefaultTimeout)
-	defer cancel()
+		if validate != nil {
+			if err := validate.Struct(request); err != nil {
+				return errorx.ErrInvalidInput.WithDetails(fmt.Sprintf("Input validation failed: %v", err))
+			}
+		}
 
-	response, err := h.upsertBatch(ctx, request)
-	if err != nil {
-		return err
+		ctx, cancel := context.WithTimeout(c.UserContext(), crud.DefaultTimeout)
+		defer cancel()
+
+		response, err := upsertBatch(ctx, repository, txManager, request)
+		if err != nil {
+			return err
+		}
+		return c.Status(fiber.StatusOK).JSON(response)
 	}
-	return c.Status(fiber.StatusOK).JSON(response)
 }
 
-func (h *Handler) upsertBatch(ctx context.Context, request BatchUpsertRequest) ([]Response, error) {
+func upsertBatch(ctx context.Context, repository *Repository, txManager crud.TxManager, request BatchUpsertRequest) ([]Response, error) {
 	availabilities, err := buildAvailabilities(request)
 	if err != nil {
 		return nil, err
 	}
 
 	var result []domain.MenuAvailability
-	err = h.txManager.WithinTx(ctx, func(tx *gorm.DB) error {
-		updated, err := h.repository.UpsertBatch(ctx, tx, availabilities)
+	err = txManager.WithinTx(ctx, func(tx *gorm.DB) error {
+		updated, err := repository.UpsertBatch(ctx, tx, availabilities)
 		if err != nil {
 			return err
 		}

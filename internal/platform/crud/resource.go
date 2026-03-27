@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/gofiber/fiber/v3"
 )
 
 const DefaultTimeout = 5 * time.Second
@@ -16,6 +18,7 @@ type Validator interface {
 type CreateMapper[Entity SoftDeleteEntity, CreateRequest any] func(CreateRequest) (*Entity, error)
 type UpdateMapper[Entity SoftDeleteEntity, UpdateRequest any] func(*Entity, UpdateRequest) error
 type ResponseMapper[Entity SoftDeleteEntity, Response any] func(*Entity) (Response, error)
+type ExtraRoutes func(fiber.Router)
 
 type Resource[Entity SoftDeleteEntity, CreateRequest any, UpdateRequest any, Response any] struct {
 	Name        string
@@ -27,6 +30,7 @@ type Resource[Entity SoftDeleteEntity, CreateRequest any, UpdateRequest any, Res
 	MapCreate   CreateMapper[Entity, CreateRequest]
 	ApplyUpdate UpdateMapper[Entity, UpdateRequest]
 	MapResponse ResponseMapper[Entity, Response]
+	ExtraRoutes ExtraRoutes
 	Timeout     time.Duration
 }
 

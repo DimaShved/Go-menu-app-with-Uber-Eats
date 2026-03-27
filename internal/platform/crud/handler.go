@@ -27,6 +27,9 @@ func (h *ResourceHandler[Entity, CreateRequest, UpdateRequest, Response]) Regist
 
 	group.Post("/", h.create)
 	group.Get("/", h.list)
+	if h.resource.ExtraRoutes != nil {
+		h.resource.ExtraRoutes(group)
+	}
 	group.Get("/:id", h.getByID)
 	group.Put("/:id", h.update)
 	group.Delete("/:id", h.delete)

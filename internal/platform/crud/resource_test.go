@@ -2,11 +2,83 @@ package crud
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+func TestResourcePrepareForHandlerValidatesRequiredFields(t *testing.T) {
+	tests := []struct {
+		name         string
+		change       func(*testResource)
+		missingField string
+	}{
+		{
+			name: "missing name",
+			change: func(resource *testResource) {
+				resource.Name = ""
+			},
+			missingField: "Name",
+		},
+		{
+			name: "missing path",
+			change: func(resource *testResource) {
+				resource.Path = ""
+			},
+			missingField: "Path",
+		},
+		{
+			name: "missing repository",
+			change: func(resource *testResource) {
+				resource.Repository = nil
+			},
+			missingField: "Repository",
+		},
+		{
+			name: "missing tx manager",
+			change: func(resource *testResource) {
+				resource.TxManager = nil
+			},
+			missingField: "TxManager",
+		},
+		{
+			name: "missing create mapper",
+			change: func(resource *testResource) {
+				resource.MapCreate = nil
+			},
+			missingField: "MapCreate",
+		},
+		{
+			name: "missing update applier",
+			change: func(resource *testResource) {
+				resource.ApplyUpdate = nil
+			},
+			missingField: "ApplyUpdate",
+		},
+		{
+			name: "missing response mapper",
+			change: func(resource *testResource) {
+				resource.MapResponse = nil
+			},
+			missingField: "MapResponse",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource := baseResource()
+			tt.change(&resource)
+
+			requirePanicContains(t, func() {
+				_ = resource.prepareForHandler()
+			}, tt.missingField)
+		})
+	}
+}
 
 type testEntity struct {
 	id        uuid.UUID
@@ -83,4 +155,21 @@ func (testTxManager) DB() *gorm.DB {
 
 func (testTxManager) WithinTx(context.Context, func(*gorm.DB) error) error {
 	return nil
+}
+
+func requirePanicContains(t *testing.T, fn func(), want string) {
+	t.Helper()
+
+	defer func() {
+		recovered := recover()
+		if recovered == nil {
+			t.Fatalf("expected panic containing %q", want)
+		}
+		got := fmt.Sprint(recovered)
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected panic containing %q, got %q", want, got)
+		}
+	}()
+
+	fn()
 }

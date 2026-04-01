@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"uber-go-menu/internal/resources/menu_availability"
 
 	"github.com/google/uuid"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -186,6 +187,72 @@ func TestMenuItemRepositoryWritesAssociationsAndPreloadsThem(t *testing.T) {
 	}
 	if gotCategory.Section.Restaurant.ID != restaurant.ID {
 		t.Fatalf("expected restaurant preload %s, got %s", restaurant.ID, gotCategory.Section.Restaurant.ID)
+	}
+}
+
+func TestMenuAvailabilityRepositoryUpsertBatchInsertsUpdatesAndRestoresSoftDeletedRows(t *testing.T) {
+	cleanDatabase(t)
+	ctx := context.Background()
+	repository := menu_availability.NewRepository()
+	restaurant := createRestaurant(t, "Breakfast Club")
+	section := createSection(t, restaurant.ID, "Breakfast")
+
+	inserted, err := repository.UpsertBatch(ctx, testDB, []domain.MenuAvailability{
+		{
+			MenuSectionId: section.ID,
+			DayOfWeek:     1,
+			OpenTime:      480,
+			CloseTime:     900,
+		},
+	})
+	if err != nil {
+		t.Fatalf("insert availability: %v", err)
+	}
+	if len(inserted) != 1 {
+		t.Fatalf("expected one inserted row, got %d", len(inserted))
+	}
+	if inserted[0].ID == uuid.Nil {
+		t.Fatal("expected database-generated availability ID")
+	}
+
+	deletedAt := time.Now()
+	if err := testDB.Model(&domain.MenuAvailability{}).
+		Where("id = ?", inserted[0].ID).
+		Update("deleted_at", deletedAt).
+		Error; err != nil {
+		t.Fatalf("soft delete availability fixture: %v", err)
+	}
+
+	updated, err := repository.UpsertBatch(ctx, testDB, []domain.MenuAvailability{
+		{
+			MenuSectionId: section.ID,
+			DayOfWeek:     1,
+			OpenTime:      600,
+			CloseTime:     960,
+		},
+	})
+	if err != nil {
+		t.Fatalf("update availability through upsert: %v", err)
+	}
+	if len(updated) != 1 {
+		t.Fatalf("expected one updated row, got %d", len(updated))
+	}
+	if updated[0].OpenTime != 600 || updated[0].CloseTime != 960 {
+		t.Fatalf("expected updated times, got open=%d close=%d", updated[0].OpenTime, updated[0].CloseTime)
+	}
+	if updated[0].DeletedAt != nil {
+		t.Fatal("expected upsert to restore soft-deleted row")
+	}
+
+	var count int64
+	if err := testDB.Model(&domain.MenuAvailability{}).
+		Where("menu_section_id = ? AND day_of_week = ?", section.ID, 1).
+		Count(&count).
+		Error; err != nil {
+		t.Fatalf("count upserted rows: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected conflict update to leave one live row, got %d", count)
 	}
 }
 

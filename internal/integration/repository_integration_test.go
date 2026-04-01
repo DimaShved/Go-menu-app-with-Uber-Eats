@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"uber-go-menu/internal/domain"
 	"uber-go-menu/internal/pkg/errorx"
 	"uber-go-menu/internal/platform/crud"
+	"uber-go-menu/internal/resources/menu_item"
 )
 
 var testDB *gorm.DB
@@ -125,6 +127,68 @@ func TestGormRepositoryPersistsAndSoftDeletesRestaurants(t *testing.T) {
 	}
 }
 
+func TestTxManagerRollsBackRepositoryWrites(t *testing.T) {
+	cleanDatabase(t)
+	ctx := context.Background()
+	repository := crud.NewGormRepository[domain.Restaurant]()
+	txManager := crud.NewTxManager(testDB)
+	restaurantID := uuid.New()
+	rollbackErr := errors.New("stop transaction")
+
+	err := txManager.WithinTx(ctx, func(tx *gorm.DB) error {
+		returned := &domain.Restaurant{
+			ID:      restaurantID,
+			Name:    "Rollback Cafe",
+			Address: "Temporary Street",
+		}
+		if err := repository.Create(ctx, tx, returned); err != nil {
+			return err
+		}
+		return rollbackErr
+	})
+	if !errors.Is(err, rollbackErr) {
+		t.Fatalf("expected rollback error, got %v", err)
+	}
+
+	if _, err := repository.GetByID(ctx, testDB, restaurantID); !errorx.IsAppError(err, errorx.ErrRecordNotFound) {
+		t.Fatalf("expected rolled-back restaurant to be absent, got %v", err)
+	}
+}
+
+func TestMenuItemRepositoryWritesAssociationsAndPreloadsThem(t *testing.T) {
+	cleanDatabase(t)
+	ctx := context.Background()
+	repository := menu_item.NewRepository()
+
+	restaurant := createRestaurant(t, "Ramen House")
+	section := createSection(t, restaurant.ID, "Lunch")
+	category := createCategory(t, section.ID, "Bowls")
+	item := createMenuItem(t, "Shoyu Ramen")
+
+	if err := repository.AttachCategories(ctx, testDB, item, []uuid.UUID{category.ID}); err != nil {
+		t.Fatalf("attach category: %v", err)
+	}
+
+	reloaded, err := repository.GetByID(ctx, testDB, item.ID)
+	if err != nil {
+		t.Fatalf("get menu item with preloads: %v", err)
+	}
+	if len(reloaded.Categories) != 1 {
+		t.Fatalf("expected one category preload, got %d", len(reloaded.Categories))
+	}
+
+	gotCategory := reloaded.Categories[0]
+	if gotCategory.ID != category.ID {
+		t.Fatalf("expected category %s, got %s", category.ID, gotCategory.ID)
+	}
+	if gotCategory.Section.ID != section.ID {
+		t.Fatalf("expected section preload %s, got %s", section.ID, gotCategory.Section.ID)
+	}
+	if gotCategory.Section.Restaurant.ID != restaurant.ID {
+		t.Fatalf("expected restaurant preload %s, got %s", restaurant.ID, gotCategory.Section.Restaurant.ID)
+	}
+}
+
 func migrateTestSchema(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&domain.Restaurant{},
@@ -159,4 +223,61 @@ func cleanDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("clean database: %v", err)
 	}
+}
+
+func createRestaurant(t *testing.T, name string) domain.Restaurant {
+	t.Helper()
+
+	restaurant := domain.Restaurant{
+		Name:    name,
+		Address: name + " address",
+	}
+	if err := testDB.Create(&restaurant).Error; err != nil {
+		t.Fatalf("create restaurant fixture: %v", err)
+	}
+	return restaurant
+}
+
+func createSection(t *testing.T, restaurantID uuid.UUID, name string) domain.MenuSection {
+	t.Helper()
+
+	section := domain.MenuSection{
+		RestaurantID: restaurantID,
+		Name:         name,
+		IsAvailable:  true,
+	}
+	if err := testDB.Create(&section).Error; err != nil {
+		t.Fatalf("create section fixture: %v", err)
+	}
+	return section
+}
+
+func createCategory(t *testing.T, sectionID uuid.UUID, name string) domain.MenuCategory {
+	t.Helper()
+
+	category := domain.MenuCategory{
+		SectionID:   sectionID,
+		Name:        name,
+		Description: name + " description",
+		IsAvailable: true,
+	}
+	if err := testDB.Create(&category).Error; err != nil {
+		t.Fatalf("create category fixture: %v", err)
+	}
+	return category
+}
+
+func createMenuItem(t *testing.T, name string) *domain.MenuItem {
+	t.Helper()
+
+	item := &domain.MenuItem{
+		Name:        name,
+		Description: name + " description",
+		Price:       1200,
+		IsAvailable: true,
+	}
+	if err := testDB.Create(item).Error; err != nil {
+		t.Fatalf("create menu item fixture: %v", err)
+	}
+	return item
 }

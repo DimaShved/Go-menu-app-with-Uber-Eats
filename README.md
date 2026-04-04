@@ -7,6 +7,17 @@ The generic base repository, service, and API flow are first-class parts of the 
 
 > The goal is to show reusable architecture without pretending every business workflow is generic CRUD.
 
+## Domain model
+- Restaurant
+- MenuSection
+- MenuCategory
+- MenuItem
+- Variation / VariationOption
+- Modifier / ModifierOption
+- MenuAvailability
+
+![img.png](doc/architecture.png)
+
 ## Key goals
 - reusable generic CRUD core
 - resource-specific extension points
@@ -21,21 +32,9 @@ The generic base repository, service, and API flow are first-class parts of the 
 - internal/pkg — infra helpers
 
 ## Tech stack
-
 - Golang
 - PostgreSQL (GORM)
 - Fiber
-
-## Domain model
-- Restaurant
-- MenuSection
-- MenuCategory
-- MenuItem
-- Variation / VariationOption
-- Modifier / ModifierOption
-- MenuAvailability
-
-![img.png](doc/architecture.png)
 
 ## Request lifecycle
 > HTTP -> generic handler -> generic service -> hooks -> repository -> transaction manager -> response mapper
